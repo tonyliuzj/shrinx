@@ -9,7 +9,7 @@ const Turnstile = dynamic(
   { ssr: false }
 );
 
-export default function Home({ domains: initialDomains }) {
+export default function Home({ domains: initialDomains, turnstileEnabled, turnstileSiteKey }) {
   const [domains] = useState(initialDomains);
   const [form, setForm] = useState({ url: "", domain: "", alias: "" });
   const [token, setToken] = useState("");
@@ -22,7 +22,7 @@ export default function Home({ domains: initialDomains }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!token) {
+    if (turnstileEnabled && !token) {
       setError("Please complete the captcha.");
       return;
     }
@@ -190,14 +190,16 @@ export default function Home({ domains: initialDomains }) {
                   </div>
                 </div>
 
-                <div className="flex justify-center py-2">
-                  <Turnstile
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-                    onSuccess={(t) => setToken(t)}
-                    onExpire={() => setToken("")}
-                    onError={() => setError("Captcha failed, please try again.")}
-                  />
-                </div>
+                {turnstileEnabled && (
+                  <div className="flex justify-center py-2">
+                    <Turnstile
+                      siteKey={turnstileSiteKey}
+                      onSuccess={(t) => setToken(t)}
+                      onExpire={() => setToken("")}
+                      onError={() => setError("Captcha failed, please try again.")}
+                    />
+                  </div>
+                )}
 
                 <button
                   type="submit"
@@ -228,10 +230,30 @@ export default function Home({ domains: initialDomains }) {
 }
 
 export async function getServerSideProps() {
-  const domains = process.env.DOMAINS?.split(",") || [];
+  const { openDB } = await import("../lib/db");
+  const db = await openDB();
+
+  // Get all domains
+  const domainsData = await db.all("SELECT domain FROM domains ORDER BY id");
+  const domains = domainsData.map((d) => d.domain);
+
+  // Get global Turnstile settings
+  const turnstileEnabledRow = await db.get(
+    "SELECT value FROM settings WHERE key = ?",
+    "turnstile_enabled"
+  );
+  const turnstileSiteKeyRow = await db.get(
+    "SELECT value FROM settings WHERE key = ?",
+    "turnstile_site_key"
+  );
+
+  await db.close();
+
   return {
     props: {
       domains,
+      turnstileEnabled: turnstileEnabledRow?.value === "true",
+      turnstileSiteKey: turnstileSiteKeyRow?.value || "",
     },
   };
 }

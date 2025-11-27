@@ -85,12 +85,6 @@ install_shrinx() {
 
   # 6. Env vars
   echo "🔧 Configuring environment variables..."
-  read -p "🔑 Cloudflare Turnstile site key: " SITE_KEY
-  read -p "🔑 Cloudflare Turnstile secret key: " SECRET_KEY
-  read -p "🌐 Allowed domains (comma-separated, e.g. localhost:3000,example.com): " DOMAINS
-  read -p "👤 Admin username: " ADMIN_USER
-  read -s -p "🔒 Admin password: " ADMIN_PASS
-  echo ""
   read -s -p "🔐 Session password (min 32 characters): " SESSION_PASS
   echo ""
   while [ ${#SESSION_PASS} -lt 32 ]; do
@@ -102,19 +96,34 @@ install_shrinx() {
   APP_PORT=${APP_PORT:-3000}
 
   cat > .env.local <<EOF
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=$SITE_KEY
-TURNSTILE_SECRET_KEY=$SECRET_KEY
-
-ADMIN_USERNAME=$ADMIN_USER
-ADMIN_PASSWORD=$ADMIN_PASS
-
+# Session security (required)
 SESSION_PASSWORD=$SESSION_PASS
 
-DOMAINS=$DOMAINS
+# Server port (optional)
 PORT=$APP_PORT
+
+# ============================================
+# DEPRECATED - Now managed in Admin Panel
+# ============================================
+# The following settings are now configured in the admin panel at /admin/settings
+# and stored in the database:
+#
+# - Turnstile CAPTCHA settings (per domain)
+# - Admin credentials (default: admin/changeme)
+# - Domains configuration
+#
+# Default admin credentials on first run:
+#   Username: admin
+#   Password: changeme
+#
+# IMPORTANT: Change the default password immediately after first login!
 EOF
 
   echo "✅ .env.local created"
+  echo ""
+  echo "📝 Note: Admin credentials and other settings are now managed in the admin panel."
+  echo "   Default login: admin / changeme"
+  echo "   Please change the password after first login at /admin/settings"
 
   # 7. Project deps
   echo "📦 Installing project dependencies..."
