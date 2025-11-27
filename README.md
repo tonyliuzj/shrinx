@@ -1,20 +1,20 @@
-# 🔗 Shrinx
+# Shrinx
 
-A **modern, minimalistic URL shortener** that transforms long, complex links into clean, concise URLs. **Shrinx** is built with Next.js & Tailwind CSS for a fast, responsive UI, and powered by a lightweight SQLite database.
+A modern, minimalistic URL shortener that transforms long, complex links into clean, concise URLs. Shrinx is built with Next.js & Tailwind CSS for a fast, responsive UI, and powered by a lightweight SQLite database.
 
 ---
 
-## 🚀 Features
+## Features
 
-- 🌐 **Instant URL Shortening**  
+- **Instant URL Shortening**
   Create custom short URLs in seconds.
-- 🔐 **Admin Dashboard**  
+- **Admin Dashboard**
   Secure, session-based admin area to add, list, and delete redirects.
-- 🛡️ **Captcha Protection**  
+- **Captcha Protection**
   Cloudflare Turnstile integration to block bots.
-- 🔄 **Catch-all Redirects**  
+- **Catch-all Redirects**
   `/url/[path]` dynamic routing for seamless redirects.
-- ⚙️ **API-First**  
+- **API-First**
   RESTful API under `/api/` for integrations or automation.
 
 ### Test
@@ -23,7 +23,7 @@ A **modern, minimalistic URL shortener** that transforms long, complex links int
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework**: Next.js (Pages Router)  
 - **Styling**: Tailwind CSS (via PostCSS)  
@@ -33,7 +33,7 @@ A **modern, minimalistic URL shortener** that transforms long, complex links int
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 
@@ -81,7 +81,7 @@ shrinx-next/
 curl -sSL https://github.com/isawebapp/Shrinx/releases/latest/download/shrinx.sh -o shrinx.sh && chmod +x shrinx.sh && bash shrinx.sh
 ```
 
-## ⚙️ Getting Started (Run by manual setup)
+## Getting Started (Run by manual setup)
 
 ### 1. Clone & Install
 
@@ -134,7 +134,7 @@ npm start
 
 ---
 
-## 🔗 API Endpoints
+## API Endpoints
 
 | Method | Endpoint                    | Description                                      |
 | ------ | --------------------------- | ------------------------------------------------ |
@@ -149,7 +149,7 @@ npm start
 
 ---
 
-## 📝 Usage
+## Usage
 
 1. **Shorten a URL:**
    Fill in the long URL, choose a domain & alias, solve the captcha, and click **Shorten URL**.
@@ -160,12 +160,12 @@ npm start
 
 ---
 
-## 📜 License
+## License
 
 This project is open-source under the [MIT License](LICENSE).
 
 ---
 
-## 💡 Contribute
+## Contribute
 
 Contributions are welcome! Feel free to open issues or submit pull requests. Let’s make Shrinx even better!
