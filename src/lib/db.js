@@ -67,6 +67,11 @@ export async function openDB() {
       "turnstile_secret_key",
       ""
     );
+    await db.run(
+      "INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
+      "primary_domain",
+      ""
+    );
   }
 
   return db;

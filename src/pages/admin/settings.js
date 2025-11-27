@@ -29,6 +29,7 @@ export default function Settings() {
   const [turnstileEnabled, setTurnstileEnabled] = useState(false);
   const [turnstileSiteKey, setTurnstileSiteKey] = useState("");
   const [turnstileSecretKey, setTurnstileSecretKey] = useState("");
+  const [primaryDomain, setPrimaryDomain] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Domains State
@@ -57,6 +58,7 @@ export default function Settings() {
         setTurnstileEnabled(data.settings.turnstile_enabled === "true");
         setTurnstileSiteKey(data.settings.turnstile_site_key || "");
         setTurnstileSecretKey(data.settings.turnstile_secret_key || "");
+        setPrimaryDomain(data.settings.primary_domain || "");
         setDomains(data.domains || []);
       }
     } catch (error) {
@@ -79,6 +81,7 @@ export default function Settings() {
           turnstile_enabled: turnstileEnabled,
           turnstile_site_key: turnstileSiteKey,
           turnstile_secret_key: turnstileSecretKey,
+          primary_domain: primaryDomain,
         }),
       });
 
@@ -257,6 +260,39 @@ export default function Settings() {
                         <Button type="submit" disabled={savingSettings}>
                             {savingSettings && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Save Turnstile Settings
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
+
+            {/* Primary Domain Settings */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Globe className="w-5 h-5 text-blue-600" />
+                        Primary Domain Restriction
+                    </CardTitle>
+                    <CardDescription>
+                        Set a primary domain to enforce. All requests from other domains will be redirected to this domain. Leave empty to allow all domains.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSaveSettings} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="primary-domain">Primary Domain</Label>
+                            <Input
+                                id="primary-domain"
+                                value={primaryDomain}
+                                onChange={(e) => setPrimaryDomain(e.target.value)}
+                                placeholder="e.g. example.com or example.com:3000"
+                            />
+                            <p className="text-sm text-muted-foreground">
+                                Include port if needed (e.g., localhost:3000). When set, only this domain will be accessible.
+                            </p>
+                        </div>
+                        <Button type="submit" disabled={savingSettings}>
+                            {savingSettings && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Primary Domain
                         </Button>
                     </form>
                 </CardContent>

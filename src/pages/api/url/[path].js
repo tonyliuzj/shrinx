@@ -2,9 +2,27 @@ import { openDB } from "../../../lib/db";
 
 export default async function handler(req, res) {
   const { path } = req.query;
-  const host = req.headers.host.split(":")[0];
+  const requestHost = req.headers.host;
+  const host = requestHost.split(":")[0];
 
   const db = await openDB();
+
+  // Check primary domain restriction
+  const primaryDomainSetting = await db.get(
+    "SELECT value FROM settings WHERE key = ?",
+    "primary_domain"
+  );
+
+  // If primary domain is set and request is not from primary domain, redirect
+  if (primaryDomainSetting && primaryDomainSetting.value) {
+    const primaryDomain = primaryDomainSetting.value;
+    if (requestHost !== primaryDomain && !requestHost.startsWith(primaryDomain + ":")) {
+      await db.close();
+      const protocol = req.headers["x-forwarded-proto"] || "http";
+      const redirectUrl = `${protocol}://${primaryDomain}${req.url}`;
+      return res.redirect(301, redirectUrl);
+    }
+  }
 
   // Check if host is in allowed domains
   const domainExists = await db.get(

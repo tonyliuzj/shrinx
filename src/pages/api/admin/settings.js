@@ -25,8 +25,8 @@ async function handler(req, res) {
   }
 
   if (req.method === "PUT") {
-    // Update global Turnstile settings
-    const { turnstile_enabled, turnstile_site_key, turnstile_secret_key } =
+    // Update global Turnstile settings and primary domain
+    const { turnstile_enabled, turnstile_site_key, turnstile_secret_key, primary_domain } =
       req.body;
 
     await db.run(
@@ -48,6 +48,14 @@ async function handler(req, res) {
         "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
         "turnstile_secret_key",
         turnstile_secret_key
+      );
+    }
+
+    if (primary_domain !== undefined) {
+      await db.run(
+        "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
+        "primary_domain",
+        primary_domain
       );
     }
 

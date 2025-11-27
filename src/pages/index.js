@@ -229,9 +229,34 @@ export default function Home({ domains: initialDomains, turnstileEnabled, turnst
   );
 }
 
-export async function getServerSideProps() {
+export async function getServerSideProps({ req }) {
   const { openDB } = await import("../lib/db");
   const db = await openDB();
+
+  // Check primary domain restriction
+  const primaryDomainSetting = await db.get(
+    "SELECT value FROM settings WHERE key = ?",
+    "primary_domain"
+  );
+
+  // If primary domain is set and request is not from primary domain, redirect
+  if (primaryDomainSetting && primaryDomainSetting.value) {
+    const primaryDomain = primaryDomainSetting.value;
+    const requestHost = req.headers.host;
+
+    if (requestHost !== primaryDomain && !requestHost.startsWith(primaryDomain + ":")) {
+      await db.close();
+      const protocol = req.headers["x-forwarded-proto"] || "http";
+      const redirectUrl = `${protocol}://${primaryDomain}${req.url}`;
+
+      return {
+        redirect: {
+          destination: redirectUrl,
+          permanent: false,
+        },
+      };
+    }
+  }
 
   // Get all domains
   const domainsData = await db.all("SELECT domain FROM domains ORDER BY id");
