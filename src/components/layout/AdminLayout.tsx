@@ -30,7 +30,7 @@ const sidebarItems = [
   },
 ];
 
-export default function AdminLayout({ children }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 

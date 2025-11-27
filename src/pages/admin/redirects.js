@@ -48,7 +48,6 @@ export const getServerSideProps = withSessionSsr(async ({ req }) => {
 export default function RedirectsPage({ initialRedirects }) {
   const [list, setList] = useState(initialRedirects);
   const [searchTerm, setSearchTerm] = useState("");
-  const [redirectToDelete, setRedirectToDelete] = useState(null);
 
   const handleDelete = async (id) => {
     try {

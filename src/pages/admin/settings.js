@@ -4,14 +4,12 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox"; // I might need to add this
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   Table,
@@ -89,7 +87,7 @@ export default function Settings() {
       } else {
         throw new Error("Failed to save");
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to save settings.");
     } finally {
       setSavingSettings(false);
@@ -116,7 +114,7 @@ export default function Settings() {
         const data = await res.json();
         toast.error(data.error || "Failed to add domain.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error adding domain.");
     } finally {
       setAddingDomain(false);
@@ -140,7 +138,7 @@ export default function Settings() {
       } else {
         toast.error("Failed to delete domain.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error deleting domain.");
     }
   };
@@ -183,7 +181,7 @@ export default function Settings() {
         const data = await res.json();
         toast.error(data.error || "Failed to change password.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error changing password.");
     } finally {
       setChangingPassword(false);

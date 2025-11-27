@@ -22,7 +22,7 @@ async function handler(req, res) {
       await db.run("INSERT INTO domains (domain) VALUES (?)", domain);
       await db.close();
       return res.status(200).json({ ok: true });
-    } catch (error) {
+    } catch {
       await db.close();
       return res.status(400).json({ error: "Domain already exists" });
     }
