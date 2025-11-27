@@ -84,19 +84,8 @@ install_shrinx() {
   npm install -g typescript
 
   # 6. Env vars
-<<<<<<< HEAD
   echo "🔧 Configuring environment variables..."
-  read -s -p "🔐 Session password (min 32 characters): " SESSION_PASS
-=======
-  echo "Configuring environment variables..."
-  read -p "Cloudflare Turnstile site key: " SITE_KEY
-  read -p "Cloudflare Turnstile secret key: " SECRET_KEY
-  read -p "Allowed domains (comma-separated, e.g. localhost:3000,example.com): " DOMAINS
-  read -p "Admin username: " ADMIN_USER
-  read -s -p "Admin password: " ADMIN_PASS
-  echo ""
   read -s -p "Session password (min 32 characters): " SESSION_PASS
->>>>>>> d52e98fbb480909d9b99515b0b6b7233bfd370f3
   echo ""
   while [ ${#SESSION_PASS} -lt 32 ]; do
     echo "Session password must be at least 32 characters"
@@ -130,15 +119,12 @@ PORT=$APP_PORT
 # IMPORTANT: Change the default password immediately after first login!
 EOF
 
-<<<<<<< HEAD
-  echo "✅ .env.local created"
-  echo ""
-  echo "📝 Note: Admin credentials and other settings are now managed in the admin panel."
-  echo "   Default login: admin / changeme"
-  echo "   Please change the password after first login at /admin/settings"
-=======
   echo ".env.local created"
->>>>>>> d52e98fbb480909d9b99515b0b6b7233bfd370f3
+  echo ""
+  echo "Note: Admin credentials and other settings are now managed in the admin panel."
+  echo "Default login: admin / changeme"
+  echo "Please change the password after first login at /admin/settings"
+  echo ".env.local created"
 
   # 7. Project deps
   echo "Installing project dependencies..."
