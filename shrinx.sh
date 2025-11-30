@@ -2,7 +2,7 @@
 
 set -e
 
-GIT_REPO="https://github.com/isawebapp/shrinx.git"
+GIT_REPO="https://github.com/tonyliuzj/shrinx.git"
 INSTALL_DIR="$HOME/shrinx"
 
 show_menu() {
@@ -23,12 +23,10 @@ show_menu() {
 install_shrinx() {
   echo "Starting Shrinx Installation..."
 
-  # 1. System dependencies
   echo "Installing system dependencies..."
   sudo apt update
   sudo apt install -y git curl sqlite3 build-essential
 
-  # 2. Node.js: Must be at least v18, but install 22 if not installed at all
   echo "Checking Node.js version..."
   if command -v node >/dev/null 2>&1; then
     VERSION=$(node -v | sed 's/^v//')
@@ -53,7 +51,6 @@ install_shrinx() {
     sudo apt install -y nodejs
   fi
 
-  # 3. PM2
   echo "Checking for PM2..."
   if command -v pm2 >/dev/null 2>&1; then
     echo "PM2 is already installed. Skipping installation."
@@ -62,7 +59,6 @@ install_shrinx() {
     npm install -g pm2
   fi
 
-  # 4. Clone repo
   if [ -d "$INSTALL_DIR" ]; then
     if [ -d "$INSTALL_DIR/.git" ]; then
       echo "Repository already exists. Pulling latest changes..."
@@ -79,92 +75,52 @@ install_shrinx() {
     cd "$INSTALL_DIR"
   fi
 
-  # 5. TypeScript
   echo "Installing TypeScript..."
   npm install -g typescript
 
-  # 6. Env vars
-  echo "🔧 Configuring environment variables..."
-  read -s -p "Session password (min 32 characters): " SESSION_PASS
-  echo ""
-  while [ ${#SESSION_PASS} -lt 32 ]; do
-    echo "Session password must be at least 32 characters"
-    read -s -p "Please enter a session password (min 32 characters): " SESSION_PASS
-    echo ""
-  done
+  echo "Configuring environment variables..."
+  SESSION_PASS=$(openssl rand -base64 48 | tr -d '\n' | head -c 32)
+  echo "Session password generated"
   read -p "Port to serve the app on (default 3000): " APP_PORT
   APP_PORT=${APP_PORT:-3000}
 
   cat > .env.local <<EOF
-# Session security (required)
 SESSION_PASSWORD=$SESSION_PASS
-
-# Server port (optional)
 PORT=$APP_PORT
-
-# ============================================
-# DEPRECATED - Now managed in Admin Panel
-# ============================================
-# The following settings are now configured in the admin panel at /admin/settings
-# and stored in the database:
-#
-# - Turnstile CAPTCHA settings (per domain)
-# - Admin credentials (default: admin/changeme)
-# - Domains configuration
-#
-# Default admin credentials on first run:
-#   Username: admin
-#   Password: changeme
-#
-# IMPORTANT: Change the default password immediately after first login!
 EOF
 
   echo ".env.local created"
-  echo ""
-  echo "Note: Admin credentials and other settings are now managed in the admin panel."
-  echo "Default login: admin / changeme"
-  echo "Please change the password after first login at /admin/settings"
-  echo ".env.local created"
+  echo "Default admin login: admin / changeme"
+  echo "Change the password after first login at /admin/settings"
 
-  # 7. Project deps
   echo "Installing project dependencies..."
   npm install
 
-  # 8. Build
   echo "Building the app..."
   npm run build
 
-  # 9. Start PM2
-  echo "Starting Shrinx under PM2 on port $APP_PORT..."
+  echo "Starting Shrinx with PM2..."
   pm2 start "npm run start -- -p $APP_PORT" --name "shrinx"
   pm2 save
   pm2 startup
 
-  echo ""
   echo "Installation complete!"
   echo "Visit: http://localhost:$APP_PORT"
-  echo "To view PM2 processes: pm2 list"
-  echo "To see logs: pm2 logs shrinx"
+  echo "View logs: pm2 logs shrinx"
 }
 
 update_shrinx() {
   echo "Updating Shrinx..."
 
   if [ ! -d "$INSTALL_DIR/.git" ]; then
-    echo "Shrinx not installed or not a git repository in $INSTALL_DIR."
+    echo "Shrinx not installed in $INSTALL_DIR"
     exit 1
   fi
 
   cd "$INSTALL_DIR"
   git pull
-
-  echo "Updating dependencies..."
   npm install
-
-  echo "Rebuilding the app..."
   npm run build
-
-  echo "Restarting Shrinx with PM2..."
   pm2 restart shrinx
 
   echo "Update complete!"
@@ -182,13 +138,10 @@ uninstall_shrinx() {
   if [ -d "$INSTALL_DIR" ]; then
     rm -rf "$INSTALL_DIR"
     echo "Removed $INSTALL_DIR"
-  else
-    echo "Shrinx directory not found."
   fi
 
-  echo "Note: Node.js, PM2, and other system dependencies are NOT removed."
-  echo "Remove them manually if desired: sudo apt remove nodejs pm2 ..."
   echo "Uninstall complete!"
+  echo "Note: System dependencies (Node.js, PM2) were not removed"
 }
 
 show_menu
