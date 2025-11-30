@@ -8,8 +8,12 @@ A modern, minimalistic URL shortener that transforms long, complex links into cl
 
 - **Instant URL Shortening**
   Create custom short URLs in seconds.
+- **Multi-Domain Support**
+  Manage multiple domains from a single instance with database-stored configuration.
 - **Admin Dashboard**
-  Secure, session-based admin area to add, list, and delete redirects.
+  Secure, session-based admin area to add, list, and delete redirects with a modern UI.
+- **Settings Management**
+  Configure Turnstile keys, admin credentials, and domains directly from the admin panel.
 - **Captcha Protection**
   Cloudflare Turnstile integration to block bots.
 - **Catch-all Redirects**
@@ -17,62 +21,84 @@ A modern, minimalistic URL shortener that transforms long, complex links into cl
 - **API-First**
   RESTful API under `/api/` for integrations or automation.
 
-### Test
-[123415.xyz/url/test](https://123415.xyz/url/test)
+### Demo
+Live at [shortenno.de](https://shortenno.de)
+
+Test URL: [123415.xyz/url/test](https://123415.xyz/url/test)
 
 
 ---
 
 ## Tech Stack
 
-- **Framework**: Next.js (Pages Router)  
-- **Styling**: Tailwind CSS (via PostCSS)  
-- **Database**: SQLite (file `db.sqlite`)  
-- **Session**: next-iron-session (cookie-based admin auth)  
-- **Captcha**: Cloudflare Turnstile (`@marsidev/react-turnstile`)  
+- **Framework**: Next.js 15 (Pages Router) with TypeScript
+- **Styling**: Tailwind CSS 4 (via PostCSS)
+- **UI Components**: Radix UI + shadcn/ui (Dialog, Dropdown, Alert, etc.)
+- **Database**: SQLite (file `db.sqlite`)
+- **Session**: iron-session (cookie-based admin auth)
+- **Captcha**: Cloudflare Turnstile (`@marsidev/react-turnstile`)
+- **Forms**: React Hook Form + Zod validation
+- **Icons**: Lucide React + Heroicons  
 
 ---
 
 ## Project Structure
 
 ```
-
-shrinx-next/
-├── .env.example           # Example environment variables
-├── next.config.js
+shrinx/
+├── example.env.local      # Example environment variables
+├── next.config.ts         # Next.js configuration (TypeScript)
 ├── package.json
-├── postcss.config.js
-├── tailwind.config.js
+├── postcss.config.mjs
+├── tsconfig.json          # TypeScript configuration
 ├── db.sqlite              # SQLite database file
 ├── public/                # Static assets (favicon, etc.)
 └── src/
-├── lib/
-│   ├── db.js          # SQLite helper
-│   └── session.js     # next-iron-session setup
-├── pages/
-│   ├── \_app.js
-│   ├── \_document.js
-│   ├── index.js       # Home & URL create form
-│   ├── success.js     # Display created URL
-│   ├── error.js       # 404 page
-│   ├── login.js       # Admin login
-│   ├── admin.js       # Admin dashboard
-│   ├── url/
-│   │   └── \[path].js  # Dynamic redirect page
-│   └── api/
-│       ├── domains.js
-│       ├── save.js
-│       ├── url/\[path].js
-│       └── admin/
-│           ├── login.js
-│           ├── redirects.js
-│           ├── add.js
-│           ├── delete.js
-│           └── logout.js
-└── styles/
-└── globals.css    # Tailwind import
-
-````
+    ├── components/
+    │   ├── layout/
+    │   │   └── AdminLayout.tsx  # Admin page layout wrapper
+    │   └── ui/                  # shadcn/ui components
+    │       ├── button.tsx
+    │       ├── card.tsx
+    │       ├── dialog.tsx
+    │       ├── dropdown-menu.tsx
+    │       ├── input.tsx
+    │       ├── table.tsx
+    │       └── ...
+    ├── lib/
+    │   ├── db.js              # SQLite helper
+    │   ├── session.js         # iron-session setup
+    │   ├── domainMiddleware.js # Domain validation
+    │   └── utils.ts           # Utility functions
+    ├── pages/
+    │   ├── _app.js
+    │   ├── _document.js
+    │   ├── index.js           # Home & URL create form
+    │   ├── success.js         # Display created URL
+    │   ├── error.js           # 404 page
+    │   ├── login.js           # Admin login
+    │   ├── admin.js           # Admin dashboard home
+    │   ├── admin/
+    │   │   ├── redirects.js   # Manage redirects
+    │   │   └── settings.js    # Admin settings
+    │   ├── url/
+    │   │   └── [path].js      # Dynamic redirect page
+    │   └── api/
+    │       ├── domains.js
+    │       ├── save.js
+    │       ├── url/[path].js
+    │       └── admin/
+    │           ├── login.js
+    │           ├── logout.js
+    │           ├── redirects.js
+    │           ├── add.js
+    │           ├── delete.js
+    │           ├── domains.js
+    │           ├── settings.js
+    │           └── change-password.js
+    └── styles/
+        └── globals.css        # Tailwind import
+```
 
 ---
 ## Run by script (One Click Install)
@@ -112,8 +138,10 @@ ADMIN_PASSWORD=changeme
 
 SESSION_PASSWORD=complex_password_at_least_32_chars
 
-DOMAINS=localhost:3000
+DOMAINS=localhost
 ```
+
+**Note:** After initial setup, Turnstile keys, admin credentials, and domains can be managed directly from the admin settings panel. These values are stored in the database and take precedence over environment variables.
 
 ### 3. Run in Development
 
@@ -136,16 +164,23 @@ npm start
 
 ## API Endpoints
 
-| Method | Endpoint                    | Description                                      |
-| ------ | --------------------------- | ------------------------------------------------ |
-| GET    | `/api/domains`              | Fetch list of allowed domains                    |
-| POST   | `/api/save`                 | Create a new redirect (requires Turnstile token) |
-| POST   | `/api/admin/login`          | Admin login (sets session cookie)                |
-| POST   | `/api/admin/logout`         | Admin logout (destroys session)                  |
-| GET    | `/api/admin/redirects`      | List all redirects (admin only)                  |
-| POST   | `/api/admin/add`            | Add a redirect (admin only)                      |
-| DELETE | `/api/admin/delete?id=<id>` | Delete a redirect by ID (admin only)             |
-| GET    | `/url/[path]`               | Redirect to the original URL                     |
+| Method | Endpoint                       | Description                                      |
+| ------ | ------------------------------ | ------------------------------------------------ |
+| GET    | `/api/domains`                 | Fetch list of allowed domains                    |
+| POST   | `/api/save`                    | Create a new redirect (requires Turnstile token) |
+| GET    | `/api/url/[path]`              | Get redirect info by path                        |
+| POST   | `/api/admin/login`             | Admin login (sets session cookie)                |
+| POST   | `/api/admin/logout`            | Admin logout (destroys session)                  |
+| GET    | `/api/admin/redirects`         | List all redirects (admin only)                  |
+| POST   | `/api/admin/add`               | Add a redirect (admin only)                      |
+| DELETE | `/api/admin/delete?id=<id>`    | Delete a redirect by ID (admin only)             |
+| GET    | `/api/admin/domains`           | Get all domains (admin only)                     |
+| POST   | `/api/admin/domains`           | Add/update domains (admin only)                  |
+| DELETE | `/api/admin/domains?id=<id>`   | Delete a domain (admin only)                     |
+| GET    | `/api/admin/settings`          | Get settings (admin only)                        |
+| POST   | `/api/admin/settings`          | Update settings (admin only)                     |
+| POST   | `/api/admin/change-password`   | Change admin password (admin only)               |
+| GET    | `/url/[path]`                  | Redirect to the original URL                     |
 
 ---
 
@@ -153,8 +188,10 @@ npm start
 
 1. **Shorten a URL:**
    Fill in the long URL, choose a domain & alias, solve the captcha, and click **Shorten URL**.
-2. **Manage Redirects:**
-   Log in to `/login`, then add, view, or delete redirects in the admin dashboard.
+2. **Admin Dashboard:**
+   Log in to `/login` to access the admin panel with the following features:
+   - **Redirects Management** (`/admin/redirects`): Add, view, and delete URL redirects
+   - **Settings** (`/admin/settings`): Configure Turnstile keys, manage domains, and change admin password
 3. **Visit a Short Link:**
    Open `https://your-domain.com/url/<alias>` to be redirected.
 
