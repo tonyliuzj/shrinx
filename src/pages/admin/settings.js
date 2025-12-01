@@ -37,14 +37,14 @@ export default function Settings() {
   const [newDomain, setNewDomain] = useState("");
   const [addingDomain, setAddingDomain] = useState(false);
 
-  // Password State
-  const [passwordForm, setPasswordForm] = useState({
-    username: "admin",
+  // Credentials State
+  const [credentialsForm, setCredentialsForm] = useState({
     currentPassword: "",
+    newUsername: "",
     newPassword: "",
     confirmPassword: "",
   });
-  const [changingPassword, setChangingPassword] = useState(false);
+  const [changingCredentials, setChangingCredentials] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -146,48 +146,72 @@ export default function Settings() {
     }
   };
 
-  const handleChangePassword = async (e) => {
+  const handleChangeCredentials = async (e) => {
     e.preventDefault();
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    if (!credentialsForm.currentPassword) {
+      toast.error("Current password is required.");
+      return;
+    }
+
+    if (!credentialsForm.newUsername && !credentialsForm.newPassword) {
+      toast.error("Please provide a new username or new password.");
+      return;
+    }
+
+    if (credentialsForm.newPassword && credentialsForm.newPassword !== credentialsForm.confirmPassword) {
       toast.error("New passwords do not match.");
       return;
     }
 
-    if (passwordForm.newPassword.length < 6) {
+    if (credentialsForm.newPassword && credentialsForm.newPassword.length < 6) {
       toast.error("Password must be at least 6 characters.");
       return;
     }
 
-    setChangingPassword(true);
+    setChangingCredentials(true);
 
     try {
       const res = await fetch("/api/admin/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: passwordForm.username,
-          currentPassword: passwordForm.currentPassword,
-          newPassword: passwordForm.newPassword,
+          currentPassword: credentialsForm.currentPassword,
+          newUsername: credentialsForm.newUsername || undefined,
+          newPassword: credentialsForm.newPassword || undefined,
         }),
       });
 
       if (res.ok) {
-        toast.success("Password changed successfully!");
-        setPasswordForm({
-          username: "admin",
+        const message = credentialsForm.newUsername && credentialsForm.newPassword
+          ? "Username and password changed successfully!"
+          : credentialsForm.newUsername
+          ? "Username changed successfully!"
+          : "Password changed successfully!";
+
+        toast.success(message);
+
+        setCredentialsForm({
           currentPassword: "",
+          newUsername: "",
           newPassword: "",
           confirmPassword: "",
         });
+
+        // If username was changed, redirect to login
+        if (credentialsForm.newUsername) {
+          setTimeout(() => {
+            window.location.href = "/login";
+          }, 1500);
+        }
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to change password.");
+        toast.error(data.error || "Failed to change credentials.");
       }
     } catch {
-      toast.error("Error changing password.");
+      toast.error("Error changing credentials.");
     } finally {
-      setChangingPassword(false);
+      setChangingCredentials(false);
     }
   };
 
@@ -361,57 +385,62 @@ export default function Settings() {
                 </CardContent>
             </Card>
 
-            {/* Change Password */}
+            {/* Change Credentials */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Key className="w-5 h-5 text-purple-600" />
-                        Change Admin Password
+                        Change Admin Credentials
                     </CardTitle>
                     <CardDescription>
-                        Update your administrator credentials.
+                        Update your username and/or password. You can change one or both fields.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <form onSubmit={handleChangePassword} className="space-y-4">
+                    <form onSubmit={handleChangeCredentials} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="username">Username</Label>
-                            <Input 
-                                id="username"
-                                value={passwordForm.username}
-                                onChange={(e) => setPasswordForm({...passwordForm, username: e.target.value})}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="current-password">Current Password</Label>
-                            <Input 
+                            <Label htmlFor="current-password">Current Password *</Label>
+                            <Input
                                 id="current-password"
                                 type="password"
-                                value={passwordForm.currentPassword}
-                                onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                                value={credentialsForm.currentPassword}
+                                onChange={(e) => setCredentialsForm({...credentialsForm, currentPassword: e.target.value})}
+                                required
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="new-password">New Password</Label>
-                            <Input 
+                            <Label htmlFor="new-username">New Username (optional)</Label>
+                            <Input
+                                id="new-username"
+                                value={credentialsForm.newUsername}
+                                onChange={(e) => setCredentialsForm({...credentialsForm, newUsername: e.target.value})}
+                                placeholder="Leave empty to keep current username"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="new-password">New Password (optional)</Label>
+                            <Input
                                 id="new-password"
                                 type="password"
-                                value={passwordForm.newPassword}
-                                onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                                value={credentialsForm.newPassword}
+                                onChange={(e) => setCredentialsForm({...credentialsForm, newPassword: e.target.value})}
+                                placeholder="Leave empty to keep current password"
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="confirm-password">Confirm New Password</Label>
-                            <Input 
+                            <Input
                                 id="confirm-password"
                                 type="password"
-                                value={passwordForm.confirmPassword}
-                                onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                                value={credentialsForm.confirmPassword}
+                                onChange={(e) => setCredentialsForm({...credentialsForm, confirmPassword: e.target.value})}
+                                placeholder="Required if changing password"
+                                disabled={!credentialsForm.newPassword}
                             />
                         </div>
-                        <Button type="submit" disabled={changingPassword} className="bg-purple-600 hover:bg-purple-700">
-                             {changingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                             Change Password
+                        <Button type="submit" disabled={changingCredentials} className="bg-purple-600 hover:bg-purple-700">
+                             {changingCredentials && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                             Update Credentials
                         </Button>
                     </form>
                 </CardContent>
