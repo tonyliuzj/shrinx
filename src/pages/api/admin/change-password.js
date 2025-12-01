@@ -17,6 +17,11 @@ async function handler(req, res) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
+  // Verify that the user is changing their own password
+  if (user.username !== username) {
+    return res.status(403).json({ error: "Cannot change another user's password" });
+  }
+
   const db = await openDB();
 
   // Verify current password
