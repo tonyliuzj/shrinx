@@ -26,6 +26,11 @@ Live at [shortenno.de](https://shortenno.de)
 
 Test URL: [123415.xyz/url/test](https://123415.xyz/url/test)
 
+## Run by script (One Click Install)
+
+```bash
+curl -sSL https://github.com/tonyliuzj/shrinx/releases/latest/download/shrinx.sh -o shrinx.sh && chmod +x shrinx.sh && bash shrinx.sh
+```
 
 ---
 
@@ -101,11 +106,6 @@ shrinx/
 ```
 
 ---
-## Run by script (One Click Install)
-
-```bash
-curl -sSL https://github.com/isawebapp/Shrinx/releases/latest/download/shrinx.sh -o shrinx.sh && chmod +x shrinx.sh && bash shrinx.sh
-```
 
 ## Getting Started (Run by manual setup)
 
