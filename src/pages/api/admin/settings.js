@@ -1,5 +1,6 @@
 import { withSessionRoute } from "../../../lib/session";
 import { openDB } from "@/data/database";
+import { validatePlainDomain } from "@/lib/domainValidation";
 
 async function handler(req, res) {
   const user = req.session.get("user");
@@ -28,6 +29,17 @@ async function handler(req, res) {
     // Update global Turnstile settings and primary domain
     const { turnstile_enabled, turnstile_site_key, turnstile_secret_key, primary_domain } =
       req.body;
+    const normalizedPrimaryDomain = (primary_domain || "").trim();
+    let primaryDomainValidation = null;
+
+    if (normalizedPrimaryDomain) {
+      primaryDomainValidation = validatePlainDomain(normalizedPrimaryDomain);
+
+      if (!primaryDomainValidation.valid) {
+        await db.close();
+        return res.status(400).json({ error: primaryDomainValidation.error });
+      }
+    }
 
     await db.run(
       "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
@@ -55,7 +67,9 @@ async function handler(req, res) {
       await db.run(
         "INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
         "primary_domain",
-        primary_domain
+        normalizedPrimaryDomain
+          ? primaryDomainValidation.normalized
+          : ""
       );
     }
 

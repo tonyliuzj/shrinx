@@ -1,146 +1,185 @@
-import { useState } from "react";
-import { useRouter } from "next/router";
-import Link from "next/link";
-import { withSessionSsr } from "../lib/session";
-import { LockClosedIcon, UserIcon, KeyIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import Link from "next/link"
+import { useRouter } from "next/router"
+import { useState } from "react"
+import { ArrowRight, KeyRound, Link2, Loader2, ShieldCheck, User } from "lucide-react"
+
+import { withSessionSsr } from "../lib/session"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export const getServerSideProps = withSessionSsr(async ({ req }) => {
-  const user = req.session.get("user");
+  const user = req.session.get("user")
+
   if (user?.isLoggedIn) {
-    return { redirect: { destination: "/admin", permanent: false } };
+    return { redirect: { destination: "/admin", permanent: false } }
   }
-  return { props: {} };
-});
+
+  return { props: {} }
+})
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter()
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setError("")
+    setIsLoading(true)
 
     try {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-      });
+      })
 
       if (!res.ok) {
-        const body = await res.json();
-        setError(body.message || "Login failed");
-        setIsLoading(false);
-        return;
+        const body = await res.json()
+        setError(body.message || "Login failed")
+        setIsLoading(false)
+        return
       }
 
-      router.push("/admin");
+      router.push("/admin")
     } catch {
-      setError("An unexpected error occurred");
-      setIsLoading(false);
+      setError("An unexpected error occurred")
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden flex items-center justify-center p-4">
-      {/* Decorative background blobs */}
-      <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-      <div className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-8">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 text-blue-600 mb-4">
-              <LockClosedIcon className="w-6 h-6" />
+    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+        <Card className="rounded-[34px] border-border/70 bg-slate-950 text-white shadow-[0_32px_120px_-60px_rgba(15,23,42,0.75)]">
+          <CardHeader className="space-y-4">
+            <Badge className="w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1 text-white hover:bg-white/10">
+              Admin
+            </Badge>
+            <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-white/10">
+              <Link2 className="h-6 w-6" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Admin Access</h1>
-            <p className="text-slate-500 mt-2 text-sm">Sign in to manage your short links</p>
+            <div className="space-y-2">
+              <CardTitle className="text-4xl leading-tight tracking-tight text-white">
+                Sign in.
+              </CardTitle>
+              <CardDescription className="max-w-xl text-base leading-7 text-slate-300">
+                Manage redirects, domains, and settings.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+              Secure admin access
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="flex rounded-[34px] border-border/70 bg-card/92 shadow-[0_28px_90px_-52px_rgba(15,23,42,0.35)] backdrop-blur">
+          <div className="flex flex-1 flex-col justify-center">
+            <CardHeader className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                    Admin
+                  </p>
+                  <CardTitle className="mt-1 text-3xl tracking-tight">
+                    Login
+                  </CardTitle>
+                </div>
+              </div>
+              <CardDescription className="text-sm leading-6">
+                Use your admin credentials.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {error ? (
+                <Alert
+                  variant="destructive"
+                  className="rounded-[24px] border-destructive/20 bg-destructive/5"
+                >
+                  <AlertTitle>Login failed</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              ) : null}
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <div className="relative">
+                    <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="username"
+                      name="username"
+                      type="text"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      required
+                      placeholder="Enter your username"
+                      className="rounded-2xl pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
+                      placeholder="Enter your password"
+                      className="rounded-2xl pl-10"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full rounded-2xl"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Signing in
+                    </>
+                  ) : (
+                    <>
+                      Sign in
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              <Button asChild variant="ghost" className="w-full rounded-2xl">
+                <Link href="/">Back to homepage</Link>
+              </Button>
+            </CardContent>
           </div>
-
-          {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm flex items-start gap-2 animate-pulse">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 mt-0.5 shrink-0">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clipRule="evenodd" />
-              </svg>
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <label htmlFor="username" className="text-sm font-medium text-slate-700 ml-1">
-                Username
-              </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                  <UserIcon className="w-5 h-5" />
-                </div>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  placeholder="Enter your username"
-                  className="w-full pl-11 pr-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-slate-700 ml-1">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                  <KeyIcon className="w-5 h-5" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 bg-white/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-slate-400"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3.5 bg-slate-900 text-white font-medium rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign In <ArrowRightIcon className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-        
-        <div className="mt-8 text-center">
-          <Link href="/" className="text-sm text-slate-500 hover:text-slate-800 transition">
-            ← Back to Home
-          </Link>
-        </div>
+        </Card>
       </div>
-    </div>
-  );
+    </main>
+  )
 }

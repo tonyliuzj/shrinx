@@ -116,6 +116,14 @@ async function seedDefaults(db) {
   }
 }
 
+async function ensureColumn(db, table, column, definition) {
+  const columns = await db.all(`PRAGMA table_info(${table})`);
+
+  if (!columns.some((entry) => entry.name === column)) {
+    await db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
 export async function openDB() {
   const filename = await ensureDatabaseFile();
   const db = await open({
@@ -150,6 +158,15 @@ export async function openDB() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  await ensureColumn(db, "paths", "access_type", "TEXT DEFAULT 'simple'");
+  await ensureColumn(db, "paths", "access_password_hash", "TEXT");
+  await db.run(
+    "UPDATE paths SET access_type = 'simple' WHERE access_type IS NULL OR access_type = ''"
+  );
+  await db.run(
+    "UPDATE paths SET access_password_hash = NULL WHERE access_type != 'password'"
+  );
 
   await seedDefaults(db);
 

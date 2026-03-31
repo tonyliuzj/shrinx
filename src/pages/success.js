@@ -1,86 +1,121 @@
-import { useState } from 'react';
-import Head from 'next/head';
-import { CheckCircleIcon, ClipboardDocumentIcon, ArrowPathIcon, ClipboardDocumentCheckIcon } from "@heroicons/react/24/outline";
+import Head from "next/head"
+import Link from "next/link"
+import { useState } from "react"
+import { ArrowRight, CheckCheck, CheckCircle2, Copy, Link2 } from "lucide-react"
+
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 
 export default function Success({ path, domain }) {
-  const shortUrl = `${domain}/url/${path}`;
-  const [copied, setCopied] = useState(false);
-  
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shortUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const shortUrl = `${domain}/url/${path}`
+  const [copied, setCopied] = useState(false)
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shortUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+    }
+  }
 
   return (
     <>
       <Head>
         <title>Success · Link Guide</title>
       </Head>
-      
-      <div className="min-h-screen bg-slate-50 relative overflow-hidden flex items-center justify-center p-4">
-        {/* Decorative background blobs */}
-        <div className="absolute top-0 left-0 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-green-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-        <div className="absolute bottom-0 right-0 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
 
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl p-8 max-w-md w-full relative z-10 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-6 animate-bounce">
-            <CheckCircleIcon className="w-10 h-10" />
-          </div>
-          
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">URL Ready!</h1>
-          <p className="text-slate-500 mb-8">
-            Your shortened link has been created successfully.
-          </p>
-          
-          <div className="bg-white border border-slate-200 rounded-xl p-4 mb-8 shadow-sm relative group">
-            <p className="text-lg font-mono font-medium text-slate-700 break-all">{shortUrl}</p>
-            <div className="absolute inset-0 bg-slate-50/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm rounded-xl cursor-pointer" onClick={copyToClipboard}>
-                <span className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <ClipboardDocumentIcon className="w-4 h-4" /> Click to copy
-                </span>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-3">
-            <button
-              onClick={copyToClipboard}
-              className={`w-full py-3.5 px-4 rounded-xl font-bold transition-all shadow-lg transform hover:-translate-y-0.5 flex items-center justify-center gap-2 ${
-                copied 
-                  ? 'bg-green-600 text-white shadow-green-500/30' 
-                  : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'
-              }`}
-            >
-              {copied ? (
-                  <>
-                    <ClipboardDocumentCheckIcon className="w-5 h-5" /> Copied!
-                  </>
-              ) : (
-                  <>
-                    <ClipboardDocumentIcon className="w-5 h-5" /> Copy to Clipboard
-                  </>
-              )}
-            </button>
-            
-            <button
-              onClick={() => (window.location.href = "/")}
-              className="w-full py-3.5 px-4 bg-white text-slate-700 border border-slate-200 font-bold rounded-xl hover:bg-slate-50 transition flex items-center justify-center gap-2"
-            >
-              <ArrowPathIcon className="w-5 h-5" /> Shorten Another
-            </button>
-          </div>
+      <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-3xl items-center">
+          <Card className="w-full rounded-[34px] border-border/70 bg-card/92 shadow-[0_28px_90px_-52px_rgba(15,23,42,0.35)] backdrop-blur">
+            <CardHeader className="items-center space-y-4 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-100 text-emerald-700">
+                <CheckCircle2 className="h-8 w-8" />
+              </div>
+              <Badge className="rounded-full px-3 py-1">Redirect created</Badge>
+              <div className="space-y-2">
+                <CardTitle className="text-4xl tracking-tight">
+                  Your short link is ready.
+                </CardTitle>
+                <CardDescription className="mx-auto max-w-xl text-base leading-7">
+                  Link Guide published the route successfully and returned a
+                  shareable short URL immediately.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="rounded-[24px] border border-border/70 bg-muted/40 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <Link2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Published route
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Copy and share this URL.
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-4 break-all rounded-2xl border border-border/70 bg-card px-4 py-3 font-mono text-sm text-foreground shadow-sm">
+                  {shortUrl}
+                </p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  size="lg"
+                  className={cn(
+                    "rounded-2xl",
+                    copied && "bg-emerald-600 hover:bg-emerald-600"
+                  )}
+                  onClick={copyToClipboard}
+                >
+                  {copied ? (
+                    <>
+                      <CheckCheck className="h-4 w-4" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy short URL
+                    </>
+                  )}
+                </Button>
+                <Button asChild variant="outline" size="lg" className="rounded-2xl">
+                  <Link href="/">
+                    Create another
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+      </main>
     </>
-  );
+  )
 }
 
 export async function getServerSideProps({ query }) {
-  const { path = "", domain = "" } = query;
+  const { path = "", domain = "" } = query
+
   return {
     props: {
       path,
       domain,
     },
-  };
+  }
 }

@@ -1,5 +1,6 @@
 import { withSessionRoute } from "../../../lib/session";
 import { openDB } from "@/data/database";
+import { validatePlainDomain } from "@/lib/domainValidation";
 
 async function handler(req, res) {
   const user = req.session.get("user");
@@ -12,14 +13,18 @@ async function handler(req, res) {
   if (req.method === "POST") {
     // Add a new domain
     const { domain } = req.body;
+    const validation = validatePlainDomain(domain);
 
-    if (!domain) {
+    if (!validation.valid) {
       await db.close();
-      return res.status(400).json({ error: "Domain is required" });
+      return res.status(400).json({ error: validation.error });
     }
 
     try {
-      await db.run("INSERT INTO domains (domain) VALUES (?)", domain);
+      await db.run(
+        "INSERT INTO domains (domain) VALUES (?)",
+        validation.normalized
+      );
       await db.close();
       return res.status(200).json({ ok: true });
     } catch {
