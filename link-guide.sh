@@ -4,9 +4,65 @@ set -euo pipefail
 
 APP_NAME="link-guide"
 APP_TITLE="Link Guide"
+RUN_USER="${SUDO_USER:-$USER}"
+RUN_GROUP="$(id -gn "$RUN_USER")"
+USER_HOME="$(getent passwd "$RUN_USER" | cut -d: -f6)"
+USER_HOME="${USER_HOME:-$HOME}"
 GIT_REPO="${LINK_GUIDE_GIT_REPO:-https://github.com/tonyliuzj/link-guide.git}"
-INSTALL_DIR="${LINK_GUIDE_INSTALL_DIR:-$HOME/link-guide}"
+INSTALL_DIR="${LINK_GUIDE_INSTALL_DIR:-$USER_HOME/link-guide}"
 DATABASE_PATH="data/link-guide.sqlite"
+SERVICE_NAME="${APP_NAME}.service"
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
+
+require_systemd() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    echo "systemd is required but systemctl was not found."
+    exit 1
+  fi
+}
+
+write_service_file() {
+  local app_port="$1"
+  local node_bin
+  node_bin="$(command -v node)"
+
+  sudo tee "$SERVICE_FILE" >/dev/null <<EOF
+[Unit]
+Description=${APP_TITLE}
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=${RUN_USER}
+Group=${RUN_GROUP}
+WorkingDirectory=${INSTALL_DIR}
+Environment=NODE_ENV=production
+EnvironmentFile=${INSTALL_DIR}/.env.local
+ExecStart=${node_bin} ${INSTALL_DIR}/node_modules/next/dist/bin/next start -p ${app_port}
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+SyslogIdentifier=${APP_NAME}
+
+[Install]
+WantedBy=multi-user.target
+EOF
+}
+
+reload_and_restart_service() {
+  sudo systemctl daemon-reload
+  sudo systemctl enable "$SERVICE_NAME"
+  sudo systemctl restart "$SERVICE_NAME"
+}
+
+stop_and_remove_service() {
+  if sudo test -f "$SERVICE_FILE"; then
+    sudo systemctl disable --now "$SERVICE_NAME" || true
+    sudo rm -f "$SERVICE_FILE"
+    sudo systemctl daemon-reload
+  fi
+}
 
 show_menu() {
   echo "========== ${APP_TITLE} Installer =========="
@@ -25,6 +81,7 @@ show_menu() {
 
 install_app() {
   echo "Starting ${APP_TITLE} installation..."
+  require_systemd
 
   echo "Installing system dependencies..."
   sudo apt update
@@ -52,14 +109,6 @@ install_app() {
     echo "Node.js not found. Installing Node.js 22..."
     curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
     sudo apt install -y nodejs
-  fi
-
-  echo "Checking for PM2..."
-  if command -v pm2 >/dev/null 2>&1; then
-    echo "PM2 is already installed. Skipping installation."
-  else
-    echo "Installing PM2..."
-    npm install -g pm2
   fi
 
   if [ -d "$INSTALL_DIR" ]; then
@@ -113,22 +162,19 @@ EOF
   echo "Building the app..."
   npm run build
 
-  echo "Starting ${APP_TITLE} with PM2..."
-  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-    pm2 restart "$APP_NAME" --update-env
-  else
-    pm2 start "npm run start -- -p $APP_PORT" --name "$APP_NAME"
-  fi
-  pm2 save
-  pm2 startup
+  echo "Installing ${APP_TITLE} systemd service..."
+  write_service_file "$APP_PORT"
+  reload_and_restart_service
 
   echo "Installation complete!"
   echo "Visit: http://localhost:$APP_PORT"
-  echo "View logs: pm2 logs $APP_NAME"
+  echo "View logs: sudo journalctl -u $SERVICE_NAME -f"
+  echo "Service status: sudo systemctl status $SERVICE_NAME"
 }
 
 update_app() {
   echo "Updating ${APP_TITLE}..."
+  require_systemd
 
   if [ ! -d "$INSTALL_DIR/.git" ]; then
     echo "${APP_TITLE} is not installed in $INSTALL_DIR"
@@ -143,23 +189,19 @@ update_app() {
   APP_PORT=$(grep '^PORT=' .env.local 2>/dev/null | cut -d'=' -f2)
   APP_PORT=${APP_PORT:-3000}
 
-  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-    pm2 restart "$APP_NAME" --update-env
-  else
-    pm2 start "npm run start -- -p $APP_PORT" --name "$APP_NAME"
-  fi
+  write_service_file "$APP_PORT"
+  reload_and_restart_service
 
   echo "Update complete!"
   echo "Visit: http://localhost:$APP_PORT"
+  echo "View logs: sudo journalctl -u $SERVICE_NAME -f"
 }
 
 uninstall_app() {
   echo "Uninstalling ${APP_TITLE}..."
+  require_systemd
 
-  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-    pm2 stop "$APP_NAME"
-    pm2 delete "$APP_NAME"
-  fi
+  stop_and_remove_service
 
   if [ -d "$INSTALL_DIR" ]; then
     rm -rf "$INSTALL_DIR"
@@ -167,7 +209,7 @@ uninstall_app() {
   fi
 
   echo "Uninstall complete!"
-  echo "Note: System dependencies (Node.js, PM2) were not removed"
+  echo "Note: System dependencies (Node.js, systemd) were not removed"
 }
 
 show_menu

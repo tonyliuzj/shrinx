@@ -15,7 +15,7 @@ Link Guide is a Next.js URL shortener with a SQLite backend, multi-domain suppor
 curl -sSL https://github.com/tonyliuzj/link-guide/releases/latest/download/link-guide.sh -o link-guide.sh && chmod +x link-guide.sh && bash link-guide.sh
 ```
 
-The installer clones the project into `~/link-guide`, writes `.env.local`, builds the app, and starts it with PM2.
+The installer clones the project into `~/link-guide`, writes `.env.local`, builds the app, and installs a `systemd` service named `link-guide.service`.
 
 ## Manual Setup
 
@@ -33,6 +33,8 @@ For production:
 npm run build
 npm start -- -p 3000
 ```
+
+If you want the app managed by `systemd`, create a service that runs the production server from the project directory and points `EnvironmentFile` at `.env.local`.
 
 ## Environment
 
@@ -79,6 +81,7 @@ link-guide/
 
 - A legacy root-level `db.sqlite` is moved into `data/link-guide.sqlite` automatically on first startup.
 - Migration scripts were removed; schema setup now lives in `src/data/database.js`.
+- The install script manages the app with `systemd`; logs are available through `journalctl -u link-guide.service`.
 
 ## License
 
