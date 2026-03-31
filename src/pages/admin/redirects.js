@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { withSessionSsr } from "../../lib/session";
-import { openDB } from "../../lib/db";
+import { openDB } from "@/data/database";
 import AdminLayout from "../../components/layout/AdminLayout";
 import {
   Table,
@@ -39,6 +39,7 @@ export const getServerSideProps = withSessionSsr(async ({ req }) => {
 
   const db = await openDB();
   const redirects = await db.all("SELECT * FROM paths ORDER BY id DESC");
+  await db.close();
 
   return {
     props: { initialRedirects: redirects },

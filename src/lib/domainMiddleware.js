@@ -1,4 +1,4 @@
-import { openDB } from "./db";
+import { openDB } from "@/data/database";
 
 /**
  * Middleware to enforce primary domain restriction

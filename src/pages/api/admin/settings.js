@@ -1,5 +1,5 @@
 import { withSessionRoute } from "../../../lib/session";
-import { openDB } from "../../../lib/db";
+import { openDB } from "@/data/database";
 
 async function handler(req, res) {
   const user = req.session.get("user");

@@ -1,23 +1,18 @@
-import { openDB } from "../../lib/db";
+import { openDB } from "@/data/database";
 
 export async function getServerSideProps({ params, req }) {
   const { path } = params;
-  const host = req.headers.host;
+  const requestHost = req.headers.host;
+  const host = requestHost.split(":")[0];
 
   const db = await openDB();
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS paths (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      path TEXT,
-      domain TEXT,
-      redirect_url TEXT
-    )
-  `);
   const row = await db.get(
-    "SELECT redirect_url FROM paths WHERE path = ? AND domain = ?",
+    "SELECT redirect_url FROM paths WHERE path = ? AND domain IN (?, ?)",
     path,
+    requestHost,
     host
   );
+  await db.close();
 
   if (!row) {
     return { notFound: true };

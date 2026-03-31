@@ -1,5 +1,5 @@
 import { withSessionRoute } from "../../../lib/session";
-import { openDB } from "../../../lib/db";
+import { openDB } from "@/data/database";
 
 export default withSessionRoute(async (req, res) => {
   if (req.method !== "POST") return res.status(405).end();

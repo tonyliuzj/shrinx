@@ -1,5 +1,5 @@
 import { withSessionRoute } from "../../../lib/session";
-import { openDB } from "../../../lib/db";
+import { openDB } from "@/data/database";
 
 export default withSessionRoute(async (req, res) => {
   if (req.method !== "DELETE") {
@@ -17,7 +17,10 @@ export default withSessionRoute(async (req, res) => {
   }
 
   const db = await openDB();
-  await db.run("DELETE FROM paths WHERE id = ?", id);
-
-  res.status(200).json({ ok: true });
+  try {
+    await db.run("DELETE FROM paths WHERE id = ?", id);
+    return res.status(200).json({ ok: true });
+  } finally {
+    await db.close();
+  }
 });

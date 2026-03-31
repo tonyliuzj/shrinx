@@ -1,31 +1,34 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-GIT_REPO="https://github.com/tonyliuzj/shrinx.git"
-INSTALL_DIR="$HOME/shrinx"
+APP_NAME="link-guide"
+APP_TITLE="Link Guide"
+GIT_REPO="${LINK_GUIDE_GIT_REPO:-https://github.com/tonyliuzj/link-guide.git}"
+INSTALL_DIR="${LINK_GUIDE_INSTALL_DIR:-$HOME/link-guide}"
+DATABASE_PATH="data/link-guide.sqlite"
 
 show_menu() {
-  echo "========== Shrinx Installer =========="
+  echo "========== ${APP_TITLE} Installer =========="
   echo "1) Install"
   echo "2) Update"
   echo "3) Uninstall"
   echo "======================================="
   read -p "Select an option [1-3]: " CHOICE
   case $CHOICE in
-    1) install_shrinx ;;
-    2) update_shrinx ;;
-    3) uninstall_shrinx ;;
+    1) install_app ;;
+    2) update_app ;;
+    3) uninstall_app ;;
     *) echo "Invalid choice. Exiting." ; exit 1 ;;
   esac
 }
 
-install_shrinx() {
-  echo "Starting Shrinx Installation..."
+install_app() {
+  echo "Starting ${APP_TITLE} installation..."
 
   echo "Installing system dependencies..."
   sudo apt update
-  sudo apt install -y git curl sqlite3 build-essential
+  sudo apt install -y git curl build-essential python3 openssl
 
   echo "Checking Node.js version..."
   if command -v node >/dev/null 2>&1; then
@@ -63,7 +66,7 @@ install_shrinx() {
     if [ -d "$INSTALL_DIR/.git" ]; then
       echo "Repository already exists. Pulling latest changes..."
       cd "$INSTALL_DIR"
-      git pull
+      git pull --ff-only
     else
       echo "Directory exists but is not a git repository. Removing and cloning fresh..."
       rm -rf "$INSTALL_DIR"
@@ -75,18 +78,29 @@ install_shrinx() {
     cd "$INSTALL_DIR"
   fi
 
-  echo "Installing TypeScript..."
-  npm install -g typescript
-
   echo "Configuring environment variables..."
   SESSION_PASS=$(openssl rand -base64 48 | tr -d '\n' | head -c 32)
   echo "Session password generated"
   read -p "Port to serve the app on (default 3000): " APP_PORT
   APP_PORT=${APP_PORT:-3000}
+  read -p "Primary host/domain for short links (default localhost:${APP_PORT}): " PRIMARY_DOMAIN
+  PRIMARY_DOMAIN=${PRIMARY_DOMAIN:-localhost:${APP_PORT}}
+  read -p "Additional domains, comma-separated (optional): " EXTRA_DOMAINS
+
+  DOMAINS="$PRIMARY_DOMAIN"
+  if [ -n "${EXTRA_DOMAINS// }" ]; then
+    DOMAINS="${PRIMARY_DOMAIN},${EXTRA_DOMAINS}"
+  fi
 
   cat > .env.local <<EOF
 SESSION_PASSWORD=$SESSION_PASS
 PORT=$APP_PORT
+DATABASE_PATH=$DATABASE_PATH
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=changeme
+DOMAINS=$DOMAINS
+PRIMARY_DOMAIN=$PRIMARY_DOMAIN
+TURNSTILE_ENABLED=false
 EOF
 
   echo ".env.local created"
@@ -94,45 +108,57 @@ EOF
   echo "Change the password after first login at /admin/settings"
 
   echo "Installing project dependencies..."
-  npm install
+  npm ci
 
   echo "Building the app..."
   npm run build
 
-  echo "Starting Shrinx with PM2..."
-  pm2 start "npm run start -- -p $APP_PORT" --name "shrinx"
+  echo "Starting ${APP_TITLE} with PM2..."
+  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+    pm2 restart "$APP_NAME" --update-env
+  else
+    pm2 start "npm run start -- -p $APP_PORT" --name "$APP_NAME"
+  fi
   pm2 save
   pm2 startup
 
   echo "Installation complete!"
   echo "Visit: http://localhost:$APP_PORT"
-  echo "View logs: pm2 logs shrinx"
+  echo "View logs: pm2 logs $APP_NAME"
 }
 
-update_shrinx() {
-  echo "Updating Shrinx..."
+update_app() {
+  echo "Updating ${APP_TITLE}..."
 
   if [ ! -d "$INSTALL_DIR/.git" ]; then
-    echo "Shrinx not installed in $INSTALL_DIR"
+    echo "${APP_TITLE} is not installed in $INSTALL_DIR"
     exit 1
   fi
 
   cd "$INSTALL_DIR"
-  git pull
-  npm install
+  git pull --ff-only
+  npm ci
   npm run build
-  pm2 restart shrinx
+
+  APP_PORT=$(grep '^PORT=' .env.local 2>/dev/null | cut -d'=' -f2)
+  APP_PORT=${APP_PORT:-3000}
+
+  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+    pm2 restart "$APP_NAME" --update-env
+  else
+    pm2 start "npm run start -- -p $APP_PORT" --name "$APP_NAME"
+  fi
 
   echo "Update complete!"
-  echo "Visit: http://localhost:$(grep PORT .env.local | cut -d'=' -f2)"
+  echo "Visit: http://localhost:$APP_PORT"
 }
 
-uninstall_shrinx() {
-  echo "Uninstalling Shrinx..."
+uninstall_app() {
+  echo "Uninstalling ${APP_TITLE}..."
 
-  if pm2 list | grep -q shrinx; then
-    pm2 stop shrinx
-    pm2 delete shrinx
+  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
+    pm2 stop "$APP_NAME"
+    pm2 delete "$APP_NAME"
   fi
 
   if [ -d "$INSTALL_DIR" ]; then

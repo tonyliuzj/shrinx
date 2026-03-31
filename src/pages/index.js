@@ -57,7 +57,7 @@ export default function Home({ domains: initialDomains, turnstileEnabled, turnst
   return (
     <>
       <Head>
-        <title>Shrinx · Modern URL Shortener</title>
+        <title>Link Guide · Modern URL Shortener</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -83,7 +83,7 @@ export default function Home({ domains: initialDomains, turnstileEnabled, turnst
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <a
-                href="https://github.com/tonyliuzj/Shrinx"
+                href="https://github.com/tonyliuzj/link-guide"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3 rounded-xl bg-slate-900 text-white font-medium hover:bg-slate-800 transition shadow-lg shadow-slate-900/20"
@@ -230,7 +230,7 @@ export default function Home({ domains: initialDomains, turnstileEnabled, turnst
 }
 
 export async function getServerSideProps({ req }) {
-  const { openDB } = await import("../lib/db");
+  const { openDB } = await import("@/data/database");
   const db = await openDB();
 
   // Check primary domain restriction

@@ -5,7 +5,7 @@ export default function ErrorPage() {
   return (
     <>
       <Head>
-        <title>Error · Shrinx</title>
+        <title>Error · Link Guide</title>
       </Head>
 
       <div className="min-h-screen bg-slate-50 relative overflow-hidden flex items-center justify-center p-4">

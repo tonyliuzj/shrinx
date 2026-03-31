@@ -1,208 +1,85 @@
-# Shrinx
+# Link Guide
 
-A modern, minimalistic URL shortener that transforms long, complex links into clean, concise URLs. Shrinx is built with Next.js & Tailwind CSS for a fast, responsive UI, and powered by a lightweight SQLite database.
+Link Guide is a Next.js URL shortener with a SQLite backend, multi-domain support, and a lightweight admin panel for redirects and settings.
 
----
+## Highlights
 
-## Features
+- Create and manage short links from a web UI or API.
+- Store runtime data in `data/link-guide.sqlite` instead of the project root.
+- Configure domains, primary-domain redirects, Turnstile, and admin credentials from the admin panel.
+- Seed first-run defaults from `.env.local`, then manage them in the database.
 
-- **Instant URL Shortening**
-  Create custom short URLs in seconds.
-- **Multi-Domain Support**
-  Manage multiple domains from a single instance with database-stored configuration.
-- **Admin Dashboard**
-  Secure, session-based admin area to add, list, and delete redirects with a modern UI.
-- **Settings Management**
-  Configure Turnstile keys, admin credentials, and domains directly from the admin panel.
-- **Captcha Protection**
-  Cloudflare Turnstile integration to block bots.
-- **Catch-all Redirects**
-  `/url/[path]` dynamic routing for seamless redirects.
-- **API-First**
-  RESTful API under `/api/` for integrations or automation.
-
-### Demo
-Live at [shortenno.de](https://shortenno.de)
-
-Test URL: [123415.xyz/url/test](https://123415.xyz/url/test)
-
-## Run by script (One Click Install)
+## One-Click Install
 
 ```bash
-curl -sSL https://github.com/tonyliuzj/shrinx/releases/latest/download/shrinx.sh -o shrinx.sh && chmod +x shrinx.sh && bash shrinx.sh
+curl -sSL https://github.com/tonyliuzj/link-guide/releases/latest/download/link-guide.sh -o link-guide.sh && chmod +x link-guide.sh && bash link-guide.sh
 ```
 
----
+The installer clones the project into `~/link-guide`, writes `.env.local`, builds the app, and starts it with PM2.
 
-## Tech Stack
-
-- **Framework**: Next.js 15 (Pages Router) with TypeScript
-- **Styling**: Tailwind CSS 4 (via PostCSS)
-- **UI Components**: Radix UI + shadcn/ui (Dialog, Dropdown, Alert, etc.)
-- **Database**: SQLite (file `db.sqlite`)
-- **Session**: iron-session (cookie-based admin auth)
-- **Captcha**: Cloudflare Turnstile (`@marsidev/react-turnstile`)
-- **Forms**: React Hook Form + Zod validation
-- **Icons**: Lucide React + Heroicons  
-
----
-
-## Project Structure
-
-```
-shrinx/
-├── example.env.local      # Example environment variables
-├── next.config.ts         # Next.js configuration (TypeScript)
-├── package.json
-├── postcss.config.mjs
-├── tsconfig.json          # TypeScript configuration
-├── db.sqlite              # SQLite database file
-├── public/                # Static assets (favicon, etc.)
-└── src/
-    ├── components/
-    │   ├── layout/
-    │   │   └── AdminLayout.tsx  # Admin page layout wrapper
-    │   └── ui/                  # shadcn/ui components
-    │       ├── button.tsx
-    │       ├── card.tsx
-    │       ├── dialog.tsx
-    │       ├── dropdown-menu.tsx
-    │       ├── input.tsx
-    │       ├── table.tsx
-    │       └── ...
-    ├── lib/
-    │   ├── db.js              # SQLite helper
-    │   ├── session.js         # iron-session setup
-    │   ├── domainMiddleware.js # Domain validation
-    │   └── utils.ts           # Utility functions
-    ├── pages/
-    │   ├── _app.js
-    │   ├── _document.js
-    │   ├── index.js           # Home & URL create form
-    │   ├── success.js         # Display created URL
-    │   ├── error.js           # 404 page
-    │   ├── login.js           # Admin login
-    │   ├── admin.js           # Admin dashboard home
-    │   ├── admin/
-    │   │   ├── redirects.js   # Manage redirects
-    │   │   └── settings.js    # Admin settings
-    │   ├── url/
-    │   │   └── [path].js      # Dynamic redirect page
-    │   └── api/
-    │       ├── domains.js
-    │       ├── save.js
-    │       ├── url/[path].js
-    │       └── admin/
-    │           ├── login.js
-    │           ├── logout.js
-    │           ├── redirects.js
-    │           ├── add.js
-    │           ├── delete.js
-    │           ├── domains.js
-    │           ├── settings.js
-    │           └── change-password.js
-    └── styles/
-        └── globals.css        # Tailwind import
-```
-
----
-
-## Getting Started (Run by manual setup)
-
-### 1. Clone & Install
+## Manual Setup
 
 ```bash
-git clone https://github.com/isawebapp/Shrinx.git
+git clone https://github.com/tonyliuzj/link-guide.git
+cd link-guide
+cp example.env.local .env.local
+npm ci
+npm run dev
 ```
-```bash
-cd Shrinx
-```
-```bash
-npm install
-````
 
-### 2. Environment Variables
-
-Rename `example.env.local` to `.env.local` in the project root:
+For production:
 
 ```bash
-mv example.env.local .env.local
+npm run build
+npm start -- -p 3000
 ```
+
+## Environment
 
 ```ini
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
-TURNSTILE_SECRET_KEY=your_turnstile_secret_key
+SESSION_PASSWORD=complex_password_at_least_32_chars
+PORT=3000
+DATABASE_PATH=data/link-guide.sqlite
 
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=changeme
 
-SESSION_PASSWORD=complex_password_at_least_32_chars
+DOMAINS=localhost:3000
+PRIMARY_DOMAIN=localhost:3000
 
-DOMAINS=localhost
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+TURNSTILE_ENABLED=false
 ```
 
-**Note:** After initial setup, Turnstile keys, admin credentials, and domains can be managed directly from the admin settings panel. These values are stored in the database and take precedence over environment variables.
+`ADMIN_USERNAME`, `ADMIN_PASSWORD`, `DOMAINS`, `PRIMARY_DOMAIN`, and Turnstile values are used as first-run seed data. After the database exists, manage those values from `/admin/settings`.
 
-### 3. Run in Development
+## Project Structure
 
-```bash
-npm run dev
+```text
+link-guide/
+├── data/
+│   └── link-guide.sqlite   # runtime SQLite database
+├── link-guide.sh           # installer/update/uninstall helper
+├── example.env.local
+├── package.json
+└── src/
+    ├── components/
+    ├── data/
+    │   └── database.js     # SQLite bootstrap and seed logic
+    ├── lib/
+    │   ├── domainMiddleware.js
+    │   ├── session.js
+    │   └── utils.ts
+    ├── pages/
+    └── styles/
 ```
 
-Your app will be available at `http://localhost:3000`.
+## Notes
 
-### 4. Build & Production
-
-```bash
-npm run build
-```
-```bash
-npm start
-```
-
----
-
-## API Endpoints
-
-| Method | Endpoint                       | Description                                      |
-| ------ | ------------------------------ | ------------------------------------------------ |
-| GET    | `/api/domains`                 | Fetch list of allowed domains                    |
-| POST   | `/api/save`                    | Create a new redirect (requires Turnstile token) |
-| GET    | `/api/url/[path]`              | Get redirect info by path                        |
-| POST   | `/api/admin/login`             | Admin login (sets session cookie)                |
-| POST   | `/api/admin/logout`            | Admin logout (destroys session)                  |
-| GET    | `/api/admin/redirects`         | List all redirects (admin only)                  |
-| POST   | `/api/admin/add`               | Add a redirect (admin only)                      |
-| DELETE | `/api/admin/delete?id=<id>`    | Delete a redirect by ID (admin only)             |
-| GET    | `/api/admin/domains`           | Get all domains (admin only)                     |
-| POST   | `/api/admin/domains`           | Add/update domains (admin only)                  |
-| DELETE | `/api/admin/domains?id=<id>`   | Delete a domain (admin only)                     |
-| GET    | `/api/admin/settings`          | Get settings (admin only)                        |
-| POST   | `/api/admin/settings`          | Update settings (admin only)                     |
-| POST   | `/api/admin/change-password`   | Change admin password (admin only)               |
-| GET    | `/url/[path]`                  | Redirect to the original URL                     |
-
----
-
-## Usage
-
-1. **Shorten a URL:**
-   Fill in the long URL, choose a domain & alias, solve the captcha, and click **Shorten URL**.
-2. **Admin Dashboard:**
-   Log in to `/login` to access the admin panel with the following features:
-   - **Redirects Management** (`/admin/redirects`): Add, view, and delete URL redirects
-   - **Settings** (`/admin/settings`): Configure Turnstile keys, manage domains, and change admin password
-3. **Visit a Short Link:**
-   Open `https://your-domain.com/url/<alias>` to be redirected.
-
----
+- A legacy root-level `db.sqlite` is moved into `data/link-guide.sqlite` automatically on first startup.
+- Migration scripts were removed; schema setup now lives in `src/data/database.js`.
 
 ## License
 
-This project is open-source under the [MIT License](LICENSE).
-
----
-
-## Contribute
-
-Contributions are welcome! Feel free to open issues or submit pull requests. Let’s make Shrinx even better!
+[MIT](LICENSE)

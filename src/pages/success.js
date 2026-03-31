@@ -15,7 +15,7 @@ export default function Success({ path, domain }) {
   return (
     <>
       <Head>
-        <title>Success · Shrinx</title>
+        <title>Success · Link Guide</title>
       </Head>
       
       <div className="min-h-screen bg-slate-50 relative overflow-hidden flex items-center justify-center p-4">

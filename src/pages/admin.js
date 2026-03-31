@@ -1,5 +1,5 @@
 import { withSessionSsr } from "../lib/session";
-import { openDB } from "../lib/db";
+import { openDB } from "@/data/database";
 import AdminLayout from "../components/layout/AdminLayout";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,14 +42,7 @@ export const getServerSideProps = withSessionSsr(async ({ req }) => {
   }
 
   const db = await openDB();
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS paths (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      path TEXT,
-      domain TEXT,
-      redirect_url TEXT
-    )
-  `);
+  await db.close();
   return { props: {} };
 });
 

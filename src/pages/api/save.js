@@ -1,5 +1,5 @@
 import axios from "axios";
-import { openDB } from "../../lib/db";
+import { openDB } from "@/data/database";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

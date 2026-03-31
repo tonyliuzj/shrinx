@@ -1,4 +1,4 @@
-import { openDB } from "../../../lib/db";
+import { openDB } from "@/data/database";
 
 export default async function handler(req, res) {
   const { path } = req.query;
@@ -26,7 +26,8 @@ export default async function handler(req, res) {
 
   // Check if host is in allowed domains
   const domainExists = await db.get(
-    "SELECT id FROM domains WHERE domain = ?",
+    "SELECT id FROM domains WHERE domain IN (?, ?)",
+    requestHost,
     host
   );
 
@@ -36,8 +37,9 @@ export default async function handler(req, res) {
   }
 
   const row = await db.get(
-    "SELECT redirect_url FROM paths WHERE path = ? AND domain = ?",
+    "SELECT redirect_url FROM paths WHERE path = ? AND domain IN (?, ?)",
     path.trim(),
+    requestHost,
     host
   );
 

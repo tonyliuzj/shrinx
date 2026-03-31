@@ -1,5 +1,5 @@
 import { withSessionRoute } from "../../../lib/session";
-import { openDB } from "../../../lib/db";
+import { openDB } from "@/data/database";
 
 export default withSessionRoute(async (req, res) => {
   if (req.method !== "GET") {
@@ -12,15 +12,10 @@ export default withSessionRoute(async (req, res) => {
   }
 
   const db = await openDB();
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS paths (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      path TEXT,
-      domain TEXT,
-      redirect_url TEXT
-    )
-  `);
-  const rows = await db.all("SELECT * FROM paths");
-
-  res.status(200).json(rows);
+  try {
+    const rows = await db.all("SELECT * FROM paths");
+    return res.status(200).json(rows);
+  } finally {
+    await db.close();
+  }
 });
