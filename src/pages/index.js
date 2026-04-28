@@ -26,13 +26,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -40,6 +33,7 @@ import {
   REDIRECT_ACCESS_OPTIONS,
   REDIRECT_ACCESS_TYPES,
 } from "@/lib/redirectOptions"
+import { shouldRedirectToPrimaryDomain } from "@/lib/requestHost"
 import { cn } from "@/lib/utils"
 
 const Turnstile = dynamic(
@@ -91,11 +85,6 @@ export default function Home({
       ...current,
       [event.target.name]: event.target.value,
     }))
-  }
-
-  const handleSelectDomain = (domain) => {
-    clearSuccessState()
-    setForm((current) => ({ ...current, domain }))
   }
 
   const handleAccessTypeChange = (value) => {
@@ -466,38 +455,28 @@ export default function Home({
 
                     <div className="grid gap-4 md:grid-cols-[1fr_220px]">
                       <div className="space-y-2">
-                        <Label htmlFor="domain-trigger">Domain</Label>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              id="domain-trigger"
-                              type="button"
-                              variant="outline"
-                              className="w-full justify-between rounded-2xl"
-                            >
-                              <span className="truncate">
-                                {form.domain || "Select domain"}
-                              </span>
-                              <ChevronDown className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] rounded-2xl">
-                            <DropdownMenuRadioGroup
-                              value={form.domain}
-                              onValueChange={handleSelectDomain}
-                            >
-                              {domains.map((domain) => (
-                                <DropdownMenuRadioItem
-                                  key={domain}
-                                  value={domain}
-                                  className="rounded-xl"
-                                >
-                                  {domain}
-                                </DropdownMenuRadioItem>
-                              ))}
-                            </DropdownMenuRadioGroup>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Label htmlFor="domain">Domain</Label>
+                        <div className="relative">
+                          <select
+                            id="domain"
+                            name="domain"
+                            value={form.domain}
+                            onChange={handleChange}
+                            required
+                            disabled={!domains.length}
+                            className="flex h-10 w-full appearance-none rounded-2xl border border-input bg-background px-3 py-2 pr-10 text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <option value="" disabled>
+                              Select domain
+                            </option>
+                            {domains.map((domain) => (
+                              <option key={domain} value={domain}>
+                                {domain}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        </div>
                       </div>
 
                       <div className="space-y-2">
@@ -668,10 +647,7 @@ export async function getServerSideProps({ req }) {
     const primaryDomain = primaryDomainSetting.value
     const requestHost = req.headers.host
 
-    if (
-      requestHost !== primaryDomain &&
-      !requestHost.startsWith(primaryDomain + ":")
-    ) {
+    if (shouldRedirectToPrimaryDomain(requestHost, primaryDomain)) {
       await db.close()
       const protocol = req.headers["x-forwarded-proto"] || "http"
       const redirectUrl = `${protocol}://${primaryDomain}${req.url}`

@@ -27,6 +27,10 @@ import {
   getRedirectAccessOption,
   normalizeRedirectAccessType,
 } from "@/lib/redirectOptions"
+import {
+  getRedirectDomainCandidates,
+  shouldRedirectToPrimaryDomain,
+} from "@/lib/requestHost"
 
 const Turnstile = dynamic(
   () =>
@@ -280,7 +284,6 @@ export default function UrlRedirect({
 export async function getServerSideProps({ params, req }) {
   const { path } = params
   const requestHost = req.headers.host
-  const host = requestHost.split(":")[0]
   const db = await openDB()
 
   try {
@@ -292,10 +295,7 @@ export async function getServerSideProps({ params, req }) {
     if (primaryDomainSetting?.value) {
       const primaryDomain = primaryDomainSetting.value
 
-      if (
-        requestHost !== primaryDomain &&
-        !requestHost.startsWith(primaryDomain + ":")
-      ) {
+      if (shouldRedirectToPrimaryDomain(requestHost, primaryDomain)) {
         const protocol = req.headers["x-forwarded-proto"] || "http"
 
         return {
@@ -307,10 +307,13 @@ export async function getServerSideProps({ params, req }) {
       }
     }
 
+    const primaryDomain = primaryDomainSetting?.value || ""
+    const domainCandidates = getRedirectDomainCandidates(requestHost, primaryDomain)
+    const domainPlaceholders = domainCandidates.map(() => "?").join(", ")
+
     const domainExists = await db.get(
-      "SELECT id FROM domains WHERE domain IN (?, ?)",
-      requestHost,
-      host
+      `SELECT id FROM domains WHERE domain IN (${domainPlaceholders})`,
+      ...domainCandidates
     )
 
     if (!domainExists) {
@@ -318,10 +321,9 @@ export async function getServerSideProps({ params, req }) {
     }
 
     const row = await db.get(
-      "SELECT redirect_url, access_type FROM paths WHERE path = ? AND domain IN (?, ?)",
+      `SELECT redirect_url, access_type FROM paths WHERE path = ? AND domain IN (${domainPlaceholders})`,
       path,
-      requestHost,
-      host
+      ...domainCandidates
     )
 
     if (!row) {

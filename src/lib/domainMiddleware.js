@@ -1,4 +1,5 @@
 import { openDB } from "@/data/database";
+import { shouldRedirectToPrimaryDomain } from "@/lib/requestHost";
 
 /**
  * Middleware to enforce primary domain restriction
@@ -23,8 +24,8 @@ export async function checkPrimaryDomain(req, res) {
   const primaryDomain = primaryDomainSetting.value;
   const requestHost = req.headers.host;
 
-  // If request is from primary domain, allow it
-  if (requestHost === primaryDomain || requestHost.startsWith(primaryDomain + ":")) {
+  // If request is from the primary domain or an IP address, allow it
+  if (!shouldRedirectToPrimaryDomain(requestHost, primaryDomain)) {
     return true;
   }
 

@@ -30,6 +30,9 @@ DOCKER_DATABASE_PATH="/app/data/link-guide.sqlite"
 CONTAINER_PORT="3000"
 SERVICE_NAME="${APP_NAME}.service"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}"
+NODESOURCE_NODE_VERSION="22.x"
+NODESOURCE_KEYRING="/usr/share/keyrings/nodesource.gpg"
+NODESOURCE_KEY_URL="https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key"
 
 require_systemd() {
   if ! command_exists systemctl; then
@@ -72,6 +75,74 @@ read_env_value() {
   grep "^${key}=" "$file" | tail -n 1 | cut -d'=' -f2-
 }
 
+nodesource_source_exists() {
+  sudo grep -Rqs "deb.nodesource.com" /etc/apt/sources.list /etc/apt/sources.list.d 2>/dev/null
+}
+
+refresh_nodesource_key_if_possible() {
+  if ! nodesource_source_exists; then
+    return 0
+  fi
+
+  if ! command_exists curl || ! command_exists gpg; then
+    return 0
+  fi
+
+  echo "Refreshing NodeSource signing key..."
+  sudo install -d -m 0755 "$(dirname "$NODESOURCE_KEYRING")"
+  curl -fsSL "$NODESOURCE_KEY_URL" | sudo gpg --dearmor --yes -o "$NODESOURCE_KEYRING"
+  sudo chmod 0644 "$NODESOURCE_KEYRING"
+}
+
+apt_update() {
+  refresh_nodesource_key_if_possible
+  sudo apt update
+}
+
+configure_nodesource_repo() {
+  local arch
+
+  arch="$(dpkg --print-architecture)"
+  if [ "$arch" != "amd64" ] && [ "$arch" != "arm64" ]; then
+    echo "Unsupported architecture for NodeSource: $arch. Only amd64 and arm64 are supported."
+    exit 1
+  fi
+
+  echo "Configuring NodeSource Node.js ${NODESOURCE_NODE_VERSION} repository..."
+  sudo install -d -m 0755 "$(dirname "$NODESOURCE_KEYRING")"
+  curl -fsSL "$NODESOURCE_KEY_URL" | sudo gpg --dearmor --yes -o "$NODESOURCE_KEYRING"
+  sudo chmod 0644 "$NODESOURCE_KEYRING"
+  sudo rm -f /etc/apt/sources.list.d/nodesource.list /etc/apt/sources.list.d/nodesource.sources
+
+  sudo tee /etc/apt/sources.list.d/nodesource.sources >/dev/null <<EOF
+Types: deb
+URIs: https://deb.nodesource.com/node_${NODESOURCE_NODE_VERSION}
+Suites: nodistro
+Components: main
+Architectures: $arch
+Signed-By: $NODESOURCE_KEYRING
+EOF
+
+  sudo tee /etc/apt/preferences.d/nodejs >/dev/null <<EOF
+Package: nodejs
+Pin: origin deb.nodesource.com
+Pin-Priority: 600
+EOF
+
+  sudo tee /etc/apt/preferences.d/nsolid >/dev/null <<EOF
+Package: nsolid
+Pin: origin deb.nodesource.com
+Pin-Priority: 600
+EOF
+
+  sudo apt update
+}
+
+install_nodesource_nodejs() {
+  configure_nodesource_repo
+  sudo apt install -y nodejs
+}
+
 ensure_nodejs() {
   echo "Checking Node.js version..."
   if command_exists node; then
@@ -82,8 +153,7 @@ ensure_nodejs() {
       read -p "Do you want to install Node.js 22? (y/n): " INSTALL_22
       if [[ "$INSTALL_22" =~ ^[Yy]$ ]]; then
         echo "Installing Node.js 22..."
-        curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-        sudo apt install -y nodejs
+        install_nodesource_nodejs
       else
         echo "Installation requires Node.js >=18. Exiting."
         exit 1
@@ -93,22 +163,21 @@ ensure_nodejs() {
     fi
   else
     echo "Node.js not found. Installing Node.js 22..."
-    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-    sudo apt install -y nodejs
+    install_nodesource_nodejs
   fi
 }
 
 install_direct_dependencies() {
   echo "Installing system dependencies for direct deployment..."
-  sudo apt update
-  sudo apt install -y git curl build-essential python3 openssl
+  apt_update
+  sudo apt install -y git curl ca-certificates gnupg build-essential python3 openssl
   ensure_nodejs
 }
 
 install_docker_dependencies() {
   echo "Installing system dependencies for Docker deployment..."
-  sudo apt update
-  sudo apt install -y git curl ca-certificates openssl
+  apt_update
+  sudo apt install -y git curl ca-certificates gnupg openssl
 
   if ! command_exists docker; then
     echo "Installing Docker..."

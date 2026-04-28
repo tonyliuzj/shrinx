@@ -4,11 +4,14 @@ import {
   REDIRECT_ACCESS_TYPES,
   normalizeRedirectAccessType,
 } from "@/lib/redirectOptions";
+import {
+  getRedirectDomainCandidates,
+  shouldRedirectToPrimaryDomain,
+} from "@/lib/requestHost";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 async function loadRedirectForRequest(db, req, path) {
   const requestHost = req.headers.host;
-  const host = requestHost.split(":")[0];
 
   const primaryDomainSetting = await db.get(
     "SELECT value FROM settings WHERE key = ?",
@@ -18,10 +21,7 @@ async function loadRedirectForRequest(db, req, path) {
   if (primaryDomainSetting?.value) {
     const primaryDomain = primaryDomainSetting.value;
 
-    if (
-      requestHost !== primaryDomain &&
-      !requestHost.startsWith(primaryDomain + ":")
-    ) {
+    if (shouldRedirectToPrimaryDomain(requestHost, primaryDomain)) {
       const protocol = req.headers["x-forwarded-proto"] || "http";
 
       return {
@@ -30,10 +30,13 @@ async function loadRedirectForRequest(db, req, path) {
     }
   }
 
+  const primaryDomain = primaryDomainSetting?.value || "";
+  const domainCandidates = getRedirectDomainCandidates(requestHost, primaryDomain);
+  const domainPlaceholders = domainCandidates.map(() => "?").join(", ");
+
   const domainExists = await db.get(
-    "SELECT id FROM domains WHERE domain IN (?, ?)",
-    requestHost,
-    host
+    `SELECT id FROM domains WHERE domain IN (${domainPlaceholders})`,
+    ...domainCandidates
   );
 
   if (!domainExists) {
@@ -41,10 +44,9 @@ async function loadRedirectForRequest(db, req, path) {
   }
 
   const row = await db.get(
-    "SELECT redirect_url, access_type, access_password_hash FROM paths WHERE path = ? AND domain IN (?, ?)",
+    `SELECT redirect_url, access_type, access_password_hash FROM paths WHERE path = ? AND domain IN (${domainPlaceholders})`,
     path.trim(),
-    requestHost,
-    host
+    ...domainCandidates
   );
 
   if (!row) {
